@@ -31,6 +31,7 @@
 - Advanced DeFi analytics
 - Real-time processing
 - Complex reorg handling
+- Message queues (Kafka/Redis) - deferred to Epic 002
 
 ## Architecture Overview
 
@@ -778,9 +779,11 @@ LOG_LEVEL=info
 
 After completing this epic:
 1. Gather feedback from demo
-2. Identify areas for improvement
+2. Identify areas for improvement  
 3. Plan Epic 002 (Core Decoding) based on learnings
 4. Consider scaling to production resources if PoC is successful
+
+**Note on Architecture Evolution**: This PoC uses direct processing (RPC → Processing → Database) for simplicity. The production architecture described in `processing_layer_architecture.md` introduces message queues (Kafka/Redpanda) for decoupling and scalability, which will be implemented in Epic 002.
 
 ---
 

@@ -55,6 +55,40 @@ The processing layer sits between **ingestion (raw nodes/WS/RPC)** and **storage
 * **Pricing**: Chainlink oracles + fallback (CoinGecko, Kaiko).
 * **Protocol labeling**: registry of known contracts, addresses, ABIs.
 
+### 4.4 Tech Stack Rationale & Alignment
+
+**Guiding principles**
+
+- Consistency-first for the system of record; scale-out and eventual consistency for analytics.
+- Start simple for PoC, evolve to specialized components as throughput grows.
+- Prefer open standards and widely supported ecosystems.
+
+**Why these choices**
+
+- TypeScript + ethers.js/web3.js: rapid iteration, rich ecosystem, excellent EVM support; Rust/Go added where low-latency/high-parallelism is required (Solana, heavy decode paths).
+- Kafka/Redpanda: durable event bus for decoupling ingestion/processing/serving and for backpressure handling at high TPS.
+- Object Store (S3/GCS) + Parquet (Bronze): cheap, append-only, columnar format ideal for large immutable raw data; enables reproducibility.
+- ClickHouse (Silver/Gold): columnar OLAP engine with ReplacingMergeTree for upserts and canonical flips; partitioning by chain/date aligns with hot-path queries.
+- Postgres (Metadata/Control Plane): strong consistency for schemas/ABIs/protocol registries and operational state (cursors, jobs).
+- Chainlink + CoinGecko/Kaiko: on-chain first for determinism, with resilient off-chain fallbacks.
+
+**CAP trade-offs (at a glance)**
+
+- Postgres for control/metadata: Consistency over Availability during partitions (effectively CP), matching reorg/canonical integrity needs.
+- ClickHouse for analytics: Optimized for Availability and Partition tolerance (AP-ish) with eventual consistency acceptable for BI.
+- Object store: AP characteristics; batch readers tolerate eventual consistency.
+
+**Phase alignment**
+
+- PoC/MVP: TypeScript workers + Postgres + minimal object storage; optional local ClickHouse.
+- Production: add Kafka/Redpanda, ClickHouse cluster, S3/GCS Bronze, Rust/Go decoders for hot chains, multi-region HA for Postgres and ClickHouse.
+
+**Operational implications**
+
+- Reorg safety: canonical flags propagated from Postgres control plane to ClickHouse via idempotent upserts.
+- Cost control: cold raw in S3/GCS (Parquet), hot aggregates in ClickHouse, small metadata in Postgres.
+- Extensibility: ABI/contract registries versioned by block range to support protocol upgrades without data rewrites.
+
 ---
 
 ## 5. Cost Model
