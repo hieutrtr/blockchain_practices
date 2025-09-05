@@ -32,6 +32,239 @@
 - Real-time processing
 - Complex reorg handling
 
+## Architecture Overview
+
+### High-Level System Architecture
+
+```mermaid
+graph TB
+    subgraph "Data Sources"
+        RPC1[Infura RPC<br/>Free Tier]
+        RPC2[Alchemy RPC<br/>Free Tier]
+        RPC3[Public RPC<br/>Endpoints]
+    end
+    
+    subgraph "Data Processing Layer"
+        BF[Blockchain<br/>Fetcher]
+        ED[Event<br/>Decoder]
+        PP[Processing<br/>Pipeline]
+        TME[Token Metadata<br/>Enricher]
+    end
+    
+    subgraph "Storage Layer"
+        PG[(PostgreSQL<br/>Database)]
+        FS[File System<br/>Logs]
+    end
+    
+    subgraph "API Layer"
+        API[REST API<br/>Express.js]
+        DOCS[API<br/>Documentation]
+    end
+    
+    subgraph "Client Applications"
+        WEB[Web Interface]
+        CLI[CLI Tools]
+        EXT[External<br/>Applications]
+    end
+    
+    RPC1 --> BF
+    RPC2 --> BF
+    RPC3 --> BF
+    
+    BF --> PP
+    ED --> PP
+    PP --> TME
+    
+    PP --> PG
+    PP --> FS
+    TME --> PG
+    
+    PG --> API
+    API --> DOCS
+    
+    API --> WEB
+    API --> CLI
+    API --> EXT
+    
+    classDef dataSource fill:#e1f5fe
+    classDef processing fill:#f3e5f5
+    classDef storage fill:#e8f5e8
+    classDef api fill:#fff3e0
+    classDef client fill:#fce4ec
+    
+    class RPC1,RPC2,RPC3 dataSource
+    class BF,ED,PP,TME processing
+    class PG,FS storage
+    class API,DOCS api
+    class WEB,CLI,EXT client
+```
+
+### Data Flow Architecture
+
+```mermaid
+sequenceDiagram
+    participant RPC as RPC Endpoint
+    participant BF as Blockchain Fetcher
+    participant PP as Processing Pipeline
+    participant ED as Event Decoder
+    participant TME as Token Enricher
+    participant DB as PostgreSQL
+    participant API as REST API
+    participant Client as Client App
+    
+    Note over RPC,Client: Block Processing Flow
+    
+    BF->>RPC: Get latest block
+    RPC->>BF: Block data + transactions
+    
+    BF->>PP: Raw block & transactions
+    PP->>DB: Store block data
+    
+    loop For each transaction
+        PP->>ED: Transaction logs
+        ED->>ED: Decode ERC-20 events
+        ED->>PP: Transfer events
+        
+        alt New token found
+            PP->>TME: Token address
+            TME->>RPC: Get token metadata
+            RPC->>TME: Name, symbol, decimals
+            TME->>DB: Store token metadata
+        end
+        
+        PP->>DB: Store transfer events
+    end
+    
+    Note over Client,API: API Query Flow
+    
+    Client->>API: GET /api/transfers/{address}
+    API->>DB: Query transfers
+    DB->>API: Transfer data + token metadata
+    API->>Client: JSON response
+```
+
+### Component Architecture
+
+```mermaid
+graph LR
+    subgraph "Core Components"
+        subgraph "Ingestion"
+            BF[BlockchainFetcher<br/>• RPC connection<br/>• Block fetching<br/>• Rate limiting]
+        end
+        
+        subgraph "Processing"
+            ED[EventDecoder<br/>• ABI parsing<br/>• Log decoding<br/>• Event extraction]
+            PP[ProcessingPipeline<br/>• Orchestration<br/>• Error handling<br/>• Batch processing]
+        end
+        
+        subgraph "Enrichment"
+            TME[TokenMetadataEnricher<br/>• Contract calls<br/>• Metadata caching<br/>• Fallback handling]
+        end
+        
+        subgraph "Storage"
+            DM[DatabaseManager<br/>• Prisma ORM<br/>• Migrations<br/>• Transactions]
+        end
+        
+        subgraph "API"
+            RS[RESTServer<br/>• Express.js<br/>• Routing<br/>• Validation]
+            QE[QueryEngine<br/>• Pagination<br/>• Filtering<br/>• Sorting]
+        end
+    end
+    
+    subgraph "Data Models"
+        Block[Block Model<br/>• number, hash<br/>• timestamp<br/>• gas info]
+        Transaction[Transaction Model<br/>• hash, from, to<br/>• value, gas<br/>• status]
+        Event[Event Model<br/>• contract<br/>• event name<br/>• decoded args]
+        Token[Token Model<br/>• address<br/>• metadata<br/>• transfers]
+        Transfer[Transfer Model<br/>• from, to<br/>• amount<br/>• token reference]
+    end
+    
+    BF --> PP
+    ED --> PP
+    PP --> TME
+    PP --> DM
+    TME --> DM
+    DM --> QE
+    QE --> RS
+    
+    DM --> Block
+    DM --> Transaction
+    DM --> Event
+    DM --> Token
+    DM --> Transfer
+    
+    classDef component fill:#e3f2fd
+    classDef model fill:#f1f8e9
+    
+    class BF,ED,PP,TME,DM,RS,QE component
+    class Block,Transaction,Event,Token,Transfer model
+```
+
+### Database Schema Diagram
+
+```mermaid
+erDiagram
+    Block {
+        int id PK
+        bigint number UK
+        string hash UK
+        datetime timestamp
+        string parentHash
+        bigint gasUsed
+        bigint gasLimit
+        datetime createdAt
+    }
+    
+    Transaction {
+        int id PK
+        string hash UK
+        bigint blockNumber FK
+        string from
+        string to
+        string value
+        bigint gasUsed
+        string gasPrice
+        int status
+        datetime createdAt
+    }
+    
+    Event {
+        int id PK
+        string txHash FK
+        int logIndex
+        string contract
+        string eventName
+        json args
+        datetime createdAt
+    }
+    
+    Token {
+        int id PK
+        string address UK
+        string name
+        string symbol
+        int decimals
+        string totalSupply
+        datetime createdAt
+        datetime updatedAt
+    }
+    
+    Transfer {
+        int id PK
+        string txHash
+        string from
+        string to
+        string amount
+        int tokenId FK
+        datetime createdAt
+    }
+    
+    Block ||--o{ Transaction : "contains"
+    Transaction ||--o{ Event : "generates"
+    Token ||--o{ Transfer : "has"
+    Transaction ||--o{ Transfer : "creates"
+```
+
 ## Technical Requirements
 
 ### Free Resources to Use
