@@ -1,6 +1,58 @@
-# Wallet Data: Acquisition & Sources
+# Wallet Data: Comprehensive Acquisition & Sources Guide
 
-This section explains the **types of data a wallet exposes**, and where developers can get them, even without being a blockchain expert.
+This comprehensive guide explains the **types of data a wallet exposes**, where developers can acquire them, and how to implement robust wallet data systems. It covers everything from basic balance queries to advanced DeFi analytics, with practical implementation examples and security considerations.
+
+## Table of Contents
+
+- [Wallet Data: Comprehensive Acquisition \& Sources Guide](#wallet-data-comprehensive-acquisition--sources-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Overview \& Architecture](#overview--architecture)
+    - [Wallet Data Ecosystem](#wallet-data-ecosystem)
+    - [Data Classification](#data-classification)
+  - [11.1 Identity (Keys \& Accounts)](#111-identity-keys--accounts)
+  - [11.2 Balances](#112-balances)
+  - [11.3 Transactions](#113-transactions)
+  - [11.4 Token \& NFT Metadata](#114-token--nft-metadata)
+  - [11.5 Approvals \& Allowances](#115-approvals--allowances)
+  - [11.6 DEX Swaps](#116-dex-swaps)
+  - [11.7 Liquidity Positions](#117-liquidity-positions)
+  - [11.8 NFT Activity](#118-nft-activity)
+  - [11.9 DeFi Positions](#119-defi-positions)
+  - [11.10 Bridges](#1110-bridges)
+  - [11.11 Prices](#1111-prices)
+  - [11.12 Indexing Services (for ease)](#1112-indexing-services-for-ease)
+
+---
+
+## Overview & Architecture
+
+### Wallet Data Ecosystem
+
+A wallet's data footprint extends far beyond simple balances. Modern blockchain wallets generate and interact with multiple data layers:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Wallet Data Layers                       │
+├─────────────────────────────────────────────────────────────┤
+│ Layer 1: Identity & Keys (Local)                           │
+│ Layer 2: On-Chain Activity (Public)                        │
+│ Layer 3: Protocol Interactions (Decoded)                   │
+│ Layer 4: Market Context (External APIs)                    │
+│ Layer 5: Analytics & Insights (Computed)                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Classification
+
+| Data Type | Privacy Level | Source | Update Frequency | Use Cases |
+|-----------|---------------|--------|------------------|-----------|
+| **Identity** | Private | Local | Static | Authentication, Signing |
+| **Balances** | Public | On-chain | Real-time | Portfolio, Payments |
+| **Transactions** | Public | On-chain | Real-time | History, Analytics |
+| **DeFi Positions** | Public | On-chain | Real-time | Risk, Yield |
+| **NFT Holdings** | Public | On-chain | Real-time | Collections, Gaming |
+| **Market Data** | Public | External | Real-time | Valuation, Trading |
+| **Behavioral** | Computed | Analytics | Batch | Risk, Compliance |
 
 ## 11.1 Identity (Keys & Accounts)
 
