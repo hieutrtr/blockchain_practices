@@ -40,10 +40,19 @@ app.get('/api/blocks', async (req, res) => {
       take: 10,
       orderBy: { number: 'desc' }
     });
+    
+    // Convert BigInt values to strings for JSON serialization
+    const serializedBlocks = blocks.map(block => ({
+      ...block,
+      number: block.number.toString(),
+      gasUsed: block.gasUsed.toString(),
+      gasLimit: block.gasLimit.toString()
+    }));
+    
     res.json({
       success: true,
-      data: blocks,
-      count: blocks.length
+      data: serializedBlocks,
+      count: serializedBlocks.length
     });
   } catch (error) {
     console.error('Error fetching blocks:', error);

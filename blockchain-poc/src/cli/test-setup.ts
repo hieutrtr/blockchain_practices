@@ -50,7 +50,7 @@ async function testEnvironmentSetup() {
 
   // Test 4: Ethereum RPC Connection
   console.log('\n4️⃣ Testing Ethereum RPC connection...');
-  const fetcher = new BlockchainFetcher();
+  const fetcher = new BlockchainFetcher(process.env.ETH_RPC_URL!, db);
   const connectionTest = await fetcher.testConnection();
   
   if (connectionTest.success) {
