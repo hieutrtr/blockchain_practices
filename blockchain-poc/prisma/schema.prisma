@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Block {
+  id          Int      @id @default(autoincrement())
+  number      BigInt   @unique
+  hash        String   @unique
+  timestamp   DateTime
+  parentHash  String
+  gasUsed     BigInt
+  gasLimit    BigInt
+  createdAt   DateTime @default(now())
+  
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  hash        String   @unique
+  blockNumber BigInt
+  from        String
+  to          String?
+  value       String
+  gasUsed     BigInt
+  gasPrice    String
+  status      Int
+  createdAt   DateTime @default(now())
+  
+  block       Block    @relation(fields: [blockNumber], references: [number])
+  events      Event[]
+}
+
+model Event {
+  id            Int      @id @default(autoincrement())
+  txHash        String
+  logIndex      Int
+  contract      String
+  eventName     String
+  args          Json
+  createdAt     DateTime @default(now())
+  
+  transaction   Transaction @relation(fields: [txHash], references: [hash])
+  
+  @@unique([txHash, logIndex])
+}
+
+model Token {
+  id          Int      @id @default(autoincrement())
+  address     String   @unique
+  name        String?
+  symbol      String?
+  decimals    Int?
+  totalSupply String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  transfers   Transfer[]
+}
+
+model Transfer {
+  id        Int      @id @default(autoincrement())
+  txHash    String
+  from      String
+  to        String
+  amount    String
+  tokenId   Int
+  createdAt DateTime @default(now())
+  
+  token     Token    @relation(fields: [tokenId], references: [id])
+}
